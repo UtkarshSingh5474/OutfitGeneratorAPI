@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
 
 import utils
 import uvicorn
@@ -7,7 +8,17 @@ import os
 from utils import generate_combined_outfit_text
 # Initialize FastAPI
 app = FastAPI()
+origins = ["*"]
+methods = ["*"]
+headers = ["*"]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=methods,
+    allow_headers=headers
+)
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
