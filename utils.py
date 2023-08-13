@@ -1,5 +1,6 @@
 # utils.py
 import openai
+import requests
 import json
 
 encryption_key = 5474
@@ -67,80 +68,111 @@ def convert_json_string(json_string):
     json_object = json.loads(json_string)
     return json_object
 
-def generate_image(prompt):
-    response = openai.Image.create(
-        prompt=prompt,
-        n=1,
-        size="256x256"
-    )
-    image_url = response['data'][0]['url']
-    return image_url
+def getFlipkartSearch(input):
+    base_url = "https://flipkart-scraper-api.dvishal485.workers.dev/search/"
+    url = base_url + input
+
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        products = response.json() #["result"][:5]  # Extract the top 5 results
+        return topFiveResults(products)
+    else:
+        return None
+
+def topFiveResults(input_json):
+    filtered_results = []
+
+    if "result" in input_json:
+        result_list = input_json["result"]
+        for i in range(min(5, len(result_list))):
+            item = result_list[i]
+            filtered_item = {
+                "name": item["name"],
+                "current_price": item["current_price"],
+                "link": item["link"],
+                "thumbnail": item["thumbnail"]
+            }
+            filtered_results.append(filtered_item)
+
+    return {"top_results": filtered_results}
+
+# def generate_image(prompt):
+#     response = openai.Image.create(
+#         prompt=prompt,
+#         n=1,
+#         size="256x256"
+#     )
+#     image_url = response['data'][0]['url']
+#     return image_url
+#
 
 
-
-def detect_image_web(uri):
-    """Detects web annotations in the file located in Google Cloud Storage."""
-    from google.cloud import vision
-
-    client = vision.ImageAnnotatorClient()
-    image = vision.Image()
-    image.source.image_uri = uri
-
-    response = client.web_detection(image=image)
-    annotations = response.web_detection
-
-    if annotations.best_guess_labels:
-        for label in annotations.best_guess_labels:
-            print(f"\nBest guess label: {label.label}")
-
-    if annotations.pages_with_matching_images:
-        print(
-            "\n{} Pages with matching images found:".format(
-                len(annotations.pages_with_matching_images)
-            )
-        )
-
-        for page in annotations.pages_with_matching_images:
-            print(f"\n\tPage url   : {page.url}")
-
-            if page.full_matching_images:
-                print(
-                    "\t{} Full Matches found: ".format(len(page.full_matching_images))
-                )
-
-                for image in page.full_matching_images:
-                    print(f"\t\tImage url  : {image.url}")
-
-            if page.partial_matching_images:
-                print(
-                    "\t{} Partial Matches found: ".format(
-                        len(page.partial_matching_images)
-                    )
-                )
-
-                for image in page.partial_matching_images:
-                    print(f"\t\tImage url  : {image.url}")
-
-    if annotations.web_entities:
-        print("\n{} Web entities found: ".format(len(annotations.web_entities)))
-
-        for entity in annotations.web_entities:
-            print(f"\n\tScore      : {entity.score}")
-            print(f"\tDescription: {entity.description}")
-
-    if annotations.visually_similar_images:
-        print(
-            "\n{} visually similar images found:\n".format(
-                len(annotations.visually_similar_images)
-            )
-        )
-
-        for image in annotations.visually_similar_images:
-            print(f"\tImage url    : {image.url}")
-
-    if response.error.message:
-        raise Exception(
-            "{}\nFor more info on error messages, check: "
-            "https://cloud.google.com/apis/design/errors".format(response.error.message)
-        )
+# def detect_image_web(uri):
+#     """Detects web annotations in the file located in Google Cloud Storage."""
+#     from google.cloud import vision
+#
+#     client = vision.ImageAnnotatorClient()
+#     image = vision.Image()
+#     image.source.image_uri = uri
+#
+#     response = client.web_detection(image=image)
+#     annotations = response.web_detection
+#
+#     if annotations.best_guess_labels:
+#         for label in annotations.best_guess_labels:
+#             print(f"\nBest guess label: {label.label}")
+#
+#     if annotations.pages_with_matching_images:
+#         print(
+#             "\n{} Pages with matching images found:".format(
+#                 len(annotations.pages_with_matching_images)
+#             )
+#         )
+#
+#         for page in annotations.pages_with_matching_images:
+#             print(f"\n\tPage url   : {page.url}")
+#
+#             if page.full_matching_images:
+#                 print(
+#                     "\t{} Full Matches found: ".format(len(page.full_matching_images))
+#                 )
+#
+#                 for image in page.full_matching_images:
+#                     print(f"\t\tImage url  : {image.url}")
+#
+#             if page.partial_matching_images:
+#                 print(
+#                     "\t{} Partial Matches found: ".format(
+#                         len(page.partial_matching_images)
+#                     )
+#                 )
+#
+#                 for image in page.partial_matching_images:
+#                     print(f"\t\tImage url  : {image.url}")
+#
+#     if annotations.web_entities:
+#         print("\n{} Web entities found: ".format(len(annotations.web_entities)))
+#
+#         for entity in annotations.web_entities:
+#             print(f"\n\tScore      : {entity.score}")
+#             print(f"\tDescription: {entity.description}")
+#
+#     if annotations.visually_similar_images:
+#         print(
+#             "\n{} visually similar images found:\n".format(
+#                 len(annotations.visually_similar_images)
+#             )
+#         )
+#
+#         for image in annotations.visually_similar_images:
+#             print(f"\tImage url    : {image.url}")
+#
+#     if response.error.message:
+#         raise Exception(
+#             "{}\nFor more info on error messages, check: "
+#             "https://cloud.google.com/apis/design/errors".format(response.error.message)
+#         )
+#
+#
 
