@@ -2,9 +2,20 @@
 import openai
 import json
 
+encryption_key = 5474
+
+def decrypt_api_key(encrypted_api_key):
+    decrypted_chars = []
+    for char in encrypted_api_key:
+        decrypted_char = chr((ord(char) - encryption_key) % 256)
+        decrypted_chars.append(decrypted_char)
+    decrypted_api_key = ''.join(decrypted_chars)
+    return decrypted_api_key
 
 # Set your OpenAI API key
-openai.api_key = "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"
+decrypted_key = decrypt_api_key("ÕÍ¤°¬®º©´¶µ·¯©¬Ò¼È¶¤ÎÄÍ¨¬¬¨Ô¹Ì¤ÙÅ¥ÐÜÅ©ªÅÕ®")
+openai.api_key = decrypted_key
+
 
 modelOutput = {"overall_outfit": "Overall description of the outfit","individual_apparels": {"apparel_1": {"name": "ex.Kurta,Shirt,Saaree","description": ""},"apparel_2": {"name": "","description": ""}}}
 output_string = json.dumps(modelOutput)
