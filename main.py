@@ -30,22 +30,14 @@ async def ok_endpoint():
 @app.post("/combined_outfit_text")
 async def generate_combined_outfit_text(input):
     combinedOutfit = utils.generate_combined_outfit_text(input)
-    return {"Output": combinedOutfit}
+    #print(combinedOutfit)
+    return combinedOutfit
 
-# @app.post("/generate_image")
-# async def generate_image(input):
-#     image_url = utils.generate_image(input)
-#     return {"ImageUrl": image_url}
-#
-# @app.post("/detect_image_web")
-# async def detect_image_web(input):
-#     imageResult = utils.detect_image_web(input)
-#     return {"ImageResult:": imageResult}
 
 @app.post("/flipkart_search")
 async def flipkart_search(input):
-    searchJson = utils.getFlipkartSearch(input)
-    return {"SearchResult:": searchJson}
+    searchJson = utils.getMultipleFlipkartSearch(input)
+    return searchJson
 
 
 

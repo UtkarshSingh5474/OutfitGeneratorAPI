@@ -4,7 +4,7 @@ import requests
 import json
 
 encryption_key = 5474
-
+seperator = "-SEPERATOR-"
 def decrypt_api_key(encrypted_api_key):
     decrypted_chars = []
     for char in encrypted_api_key:
@@ -21,7 +21,7 @@ openai.api_key = decrypted_key
 modelOutput = {"overall_outfit": "Overall description of the outfit","individual_apparels": {"apparel_1": {"name": "ex.Kurta,Shirt,Saaree","description": ""},"apparel_2": {"name": "","description": ""}}}
 output_string = json.dumps(modelOutput)
 
-modelInformation = f"As a Fashion Outfit Generator, Generate a outfit according to the user message. Specify all the clothing item seperatly in detail. Specify color and other properties. Consider and remember the userInfo, userPastOrders, socialMediaTrendInfo."
+chatbotBehaviour = f"As a Fashion Outfit Generator, Generate a outfit according to the user message. Specify all the clothing item seperatly in detail. Specify color and other properties. Consider and remember the userInfo, userPastOrders, socialMediaTrendInfo."
 
 #Dummy Data
 userInfo = "Age:21, Sex:Female, BodyType:Fit, City:Moradabad"
@@ -32,7 +32,7 @@ socialMediaTrendInfo = ""
 def generate_combined_outfit_text(input):
     messages = [
         {"role": "system",
-         "content": f"{modelInformation},userInfo:{userInfo},userPastOrders:{userPastOrders},socialMediaTrendInfo:{socialMediaTrendInfo}"},
+         "content": f"{chatbotBehaviour},userInfo:{userInfo},userPastOrders:{userPastOrders},socialMediaTrendInfo:{socialMediaTrendInfo}"},
     ]
 
     messages.append({"role": "user", "content": f"{input} "})
@@ -41,18 +41,19 @@ def generate_combined_outfit_text(input):
         model="gpt-3.5-turbo",
         messages=messages
     )
-    combined_outfit_text = completion.choices[0].message.content
-    messages.append({"role": "assistant", "content": f"{combined_outfit_text}"})
+    outfitOverview = completion.choices[0].message.content
+    messages.append({"role": "assistant", "content": f"{outfitOverview}"})
 
-    image_prompts_json_string = generate_image_prompts(combined_outfit_text)
-    image_prompts_json = convert_json_string(image_prompts_json_string)
-    print(image_prompts_json)
-    return combined_outfit_text
+    search_prompts_json_string = generate_search_prompts(outfitOverview)
+    search_prompts_json = json.loads(search_prompts_json_string)
+    # print(search_prompts_json)
+    # print(getMultipleFlipkartSearch(search_prompts_json))
+    return create_outfit_json(outfitOverview, getMultipleFlipkartSearch(json.dumps(search_prompts_json)))
 
 
-def generate_image_prompts(outfit_text):
+def generate_search_prompts(outfit_text):
     messages = [
-        {"role": "user","content": f"({outfit_text}) Generate ecommerce search prompts for each of the individual items in the outfit.Give Json object with 'clothingItem' Array contatining 'name' and 'searchPrompt'"},
+        {"role": "user","content": f"({outfit_text}) Generate ecommerce search prompts for each of the individual items in the outfit.Give Json object with 'clothingItems' Array contatining 'name' and 'searchPrompt'.Add user info(sex,size,etc) in searchPrompts: {userInfo}"},
 
         #{"role": "user", "content": f"({outfit_text}) Generate short image generation prompts for each of the individual items in the outfit.Give Json object with 'clothingItem' Array contatining 'name' and 'imagePrompt'"},
     ]
@@ -63,11 +64,41 @@ def generate_image_prompts(outfit_text):
     image_prompts_json = completion.choices[0].message.content
     return image_prompts_json
 
-def convert_json_string(json_string):
-    # Convert the cleaned string to a JSON object
-    json_object = json.loads(json_string)
-    return json_object
 
+
+def getMultipleFlipkartSearch(searchPrompts):
+    print(searchPrompts)
+    searchPrompts = json.loads(searchPrompts)
+    print("-----")
+    print(searchPrompts)
+    if 'user' in searchPrompts:
+        del searchPrompts['user']
+    if 'userInfo' in searchPrompts:
+        del searchPrompts['userInfo']
+    searchPrompts = json.loads(json.dumps(searchPrompts))
+    print("-----")
+    print(searchPrompts)
+    allClothingItemsResults = {}
+    for item in searchPrompts['clothingItems']:
+        name = item['name']
+        search_prompt = item['searchPrompt']
+        allClothingItemsResults.update(getFlipkartSearchByName(name, search_prompt))
+
+    return allClothingItemsResults
+
+
+
+def getFlipkartSearchByName(name, searchPrompt):
+    base_url = "https://flipkart-scraper-api.dvishal485.workers.dev/search/"
+    url = base_url + searchPrompt
+
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        products = response.json() #["result"][:5]  # Extract the top 5 results
+        return topFiveResults(name, products)
+    else:
+        return None
 def getFlipkartSearch(input):
     base_url = "https://flipkart-scraper-api.dvishal485.workers.dev/search/"
     url = base_url + input
@@ -76,11 +107,11 @@ def getFlipkartSearch(input):
 
     if response.status_code == 200:
         products = response.json() #["result"][:5]  # Extract the top 5 results
-        return topFiveResults(products)
+        return topFiveResults(input,products)
     else:
         return None
 
-def topFiveResults(input_json):
+def topFiveResults(name,input_json):
     filtered_results = []
 
     if "result" in input_json:
@@ -95,9 +126,21 @@ def topFiveResults(input_json):
             }
             filtered_results.append(filtered_item)
 
-    return {"top_results": filtered_results}
+    return {f'{name}':filtered_results}
 
-# def generate_image(prompt):
+import json
+
+def create_outfit_json(overviewtext, clothingItems):
+    #clothingItems = clothingItems.get("clothingItems", [])
+
+    outfit_data = {
+        "outfitOverview": overviewtext,
+        "clothingItems": clothingItems
+    }
+    #return json.loads(outfit_data, indent=2)
+    return outfit_data
+
+    # def generate_image(prompt):
 #     response = openai.Image.create(
 #         prompt=prompt,
 #         n=1,
@@ -176,3 +219,28 @@ def topFiveResults(input_json):
 #
 #
 
+
+# ride_ = {
+#     'clothingItems': [{'name': 'patriotic tank top',
+#                        'searchPrompt': 'red white and blue striped tank top'},
+#                       {'name': 'denim cutoff shorts',
+#                        'searchPrompt': 'light wash high-waisted cutoff shorts'},
+#                       {'name': 'white sneakers',
+#                        'searchPrompt': 'comfortable white sneakers for bike ride'},
+#                       {'name': 'aviator sunglasses',
+#                        'searchPrompt': 'blue reflective lens aviator sunglasses'},
+#                       {'name': 'white  baseball cap',
+#                        'searchPrompt': 'white baseball cap with country flag embroidery'},
+#                       {'name': 'bandana',
+#                        'searchPrompt': 'red white and blue bandana for bike ride'},
+#                       {'name': 'wristband',
+#                        'searchPrompt': 'flag-colored wristband for bike ride'}],
+#     'user': {
+#         'age': 21,
+#         'sex': 'Female',
+#         'bodyType': 'Fit',
+#         'city': 'Moradabad'
+#     }}
+# ride_ = json.dumps(ride_)
+# search = getMultipleFlipkartSearch(ride_)
+# print(search)
