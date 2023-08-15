@@ -27,14 +27,14 @@ async def root():
 async def ok_endpoint():
     return {"message": "ok"}
 
-@app.post("/combined_outfit_text")
+@app.get("/combined_outfit_text")
 async def generate_combined_outfit_text(input):
     combinedOutfit = utils.generate_combined_outfit_text(input)
     #print(combinedOutfit)
     return combinedOutfit
 
 
-@app.post("/flipkart_search")
+@app.get("/flipkart_search")
 async def flipkart_search(input):
     searchJson = utils.getMultipleFlipkartSearch(input)
     return searchJson

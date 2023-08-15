@@ -125,8 +125,9 @@ def topFiveResults(name,input_json):
                 "thumbnail": item["thumbnail"]
             }
             filtered_results.append(filtered_item)
+    fetch_from =input_json.get("fetch_from", "")
 
-    return {f'{name}':filtered_results}
+    return {f'{name}':{'searchLink':f'{fetch_from}','topResults':filtered_results}}
 
 import json
 
