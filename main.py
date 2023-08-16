@@ -5,7 +5,6 @@ import utils
 import uvicorn
 import os
 
-from utils import generate_combined_outfit_text
 # Initialize FastAPI
 app = FastAPI()
 origins = ["*"]
@@ -27,6 +26,20 @@ async def root():
 async def ok_endpoint():
     return {"message": "ok"}
 
+
+@app.get("/outfit_text")
+async def generate_overview_text(input):
+    overviewText = utils.generate_overview_text(input)
+    #print(combinedOutfit)
+    return overviewText
+
+@app.get("/items_flipkart_results")
+async def generate_clothingItems_search_results(overviewText):
+    clothingItemsSearchResult = utils.generate_clothingItemsFlipkartSearchResults(overviewText)
+    #print(combinedOutfit)
+    return clothingItemsSearchResult
+
+
 @app.get("/combined_outfit_text")
 async def generate_combined_outfit_text(input):
     combinedOutfit = utils.generate_combined_outfit_text(input)
@@ -36,7 +49,7 @@ async def generate_combined_outfit_text(input):
 
 @app.get("/flipkart_search")
 async def flipkart_search(input):
-    searchJson = utils.getMultipleFlipkartSearch(input)
+    searchJson = utils.getFlipkartSearch(input)
     return searchJson
 
 
