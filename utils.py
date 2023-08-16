@@ -18,42 +18,65 @@ decrypted_key = decrypt_api_key("ÕÍ¤°¬®º©´¶µ·¯©¬Ò¼È�
 openai.api_key = decrypted_key
 
 
-modelOutput = {"overall_outfit": "Overall description of the outfit","individual_apparels": {"apparel_1": {"name": "ex.Kurta,Shirt,Saaree","description": ""},"apparel_2": {"name": "","description": ""}}}
-output_string = json.dumps(modelOutput)
+# modelOutput = {"overall_outfit": "Overall description of the outfit","individual_apparels": {"apparel_1": {"name": "ex.Kurta,Shirt,Saaree","description": ""},"apparel_2": {"name": "","description": ""}}}
+#
+# chatbotBehaviour = f"As a Fashion Outfit Generator, Generate a outfit according to the user message. Specify all the clothing item seperatly in detail. Specify color and other properties. Consider and remember the userInfo, userPastOrders, socialMediaTrendInfo."
+#
+# #Dummy Data
+# userInfo = "Age:21, Sex:Female, BodyType:Fit, City:Moradabad"
+# userPastOrders = "Purchase History: Aug 5, 2023 - ₹8,700.00: Floral Print Dress (Biba) - ₹5,000.00, White Sneakers (U.S. Polo ASSN) - ₹3,700.00; Jul 20, 2023 - ₹5,546.40: Striped T-shirt (Allen Solly) - ₹1,960.00, Denim Shorts (Indigo Nation) - ₹3,586.40; Jun 10, 2023 - ₹6,162.50: Summer Hat (Global desi) - ₹1,500.00, Sunglasses (Vero Moda) - ₹2,362.50, Beach Towel (Levi’s) - ₹2,300.00; May 2, 2023 - ₹9,104.70: Blue Jeans (Louis Philippe) - ₹4,000.00, Graphic Print T-shirt (Only) - ₹1,625.90, Sneakers (Lombard) - ₹3,478.80; Apr 15, 2023 - ₹13,230.00: Evening Gown (Label Ritu Kumar) - ₹11,000.00, Clutch Bag (AccessorizeMe) - ₹2,230.00."
+# socialMediaTrendInfo = ""
+# output_string = json.dumps(modelOutput)
 
-chatbotBehaviour = f"As a Fashion Outfit Generator, Generate a outfit according to the user message. Specify all the clothing item seperatly in detail. Specify color and other properties. Consider and remember the userInfo, userPastOrders, socialMediaTrendInfo."
-
-#Dummy Data
-userInfo = "Age:21, Sex:Female, BodyType:Fit, City:Moradabad"
-userPastOrders = "Purchase History: Aug 5, 2023 - ₹8,700.00: Floral Print Dress (Biba) - ₹5,000.00, White Sneakers (U.S. Polo ASSN) - ₹3,700.00; Jul 20, 2023 - ₹5,546.40: Striped T-shirt (Allen Solly) - ₹1,960.00, Denim Shorts (Indigo Nation) - ₹3,586.40; Jun 10, 2023 - ₹6,162.50: Summer Hat (Global desi) - ₹1,500.00, Sunglasses (Vero Moda) - ₹2,362.50, Beach Towel (Levi’s) - ₹2,300.00; May 2, 2023 - ₹9,104.70: Blue Jeans (Louis Philippe) - ₹4,000.00, Graphic Print T-shirt (Only) - ₹1,625.90, Sneakers (Lombard) - ₹3,478.80; Apr 15, 2023 - ₹13,230.00: Evening Gown (Label Ritu Kumar) - ₹11,000.00, Clutch Bag (AccessorizeMe) - ₹2,230.00."
-socialMediaTrendInfo = ""
 
 
-def generate_combined_outfit_text(input):
-    messages = [
-        {"role": "system",
-         "content": f"{chatbotBehaviour},userInfo:{userInfo},userPastOrders:{userPastOrders},socialMediaTrendInfo:{socialMediaTrendInfo}"},
-    ]
-
-    messages.append({"role": "user", "content": f"{input} "})
+def generate_overview_text(input):
 
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=messages
+        messages=json.loads(input)
     )
     outfitOverview = completion.choices[0].message.content
-    messages.append({"role": "assistant", "content": f"{outfitOverview}"})
+    return outfitOverview
 
-    search_prompts_json_string = generate_search_prompts(outfitOverview)
-    search_prompts_json = json.loads(search_prompts_json_string)
-    # print(search_prompts_json)
-    # print(getMultipleFlipkartSearch(search_prompts_json))
-    return create_outfit_json(outfitOverview, getMultipleFlipkartSearch(json.dumps(search_prompts_json)))
+# def generate_combined_outfit_text(input):
+#     messages = [
+#         {"role": "system",
+#          "content": f"{chatbotBehaviour},userInfo:{userInfo},userPastOrders:{userPastOrders},socialMediaTrendInfo:{socialMediaTrendInfo}"},
+#     ]
+
+#
+#     messages.append({"role": "user", "content": f"{input} "})
+#
+#     completion = openai.ChatCompletion.create(
+#         model="gpt-3.5-turbo",
+#         messages=messages
+#     )
+#     outfitOverview = completion.choices[0].message.content
+#     messages.append({"role": "assistant", "content": f"{outfitOverview}"})
+#
+#     search_prompts_json_string = generate_search_prompts(outfitOverview)
+#     search_prompts_json = json.loads(search_prompts_json_string)
+#     # print(search_prompts_json)
+#     # print(getMultipleFlipkartSearch(search_prompts_json))
+#     return create_outfit_json(outfitOverview, getMultipleFlipkartSearch(json.dumps(search_prompts_json)))
 
 
-def generate_search_prompts(outfit_text):
+def generate_clothingItemsFlipkartSearchResults(outfit_text):
+    return getMultipleFlipkartSearch(generate_search_prompts(outfit_text))
+
+def generate_search_prompts(outfit_text,userInfo=""):
+    # Split the text to separate userInfo and outfitOverview
+    if "userInfo:" in outfit_text:
+        parts = outfit_text.split("userInfo:")
+        userInfo = parts[1].split(",")[0].strip() if len(parts) > 1 else None
+        outfitOverview = parts[0].strip()
+    else:
+        userInfo = None
+        outfitOverview = outfit_text.strip()
+
     messages = [
-        {"role": "user","content": f"({outfit_text}) Generate ecommerce search prompts for each of the individual items in the outfit.Give Json object with 'clothingItems' Array contatining 'name' and 'searchPrompt'.Add user info(sex,size,etc) in searchPrompts: {userInfo}"},
+        {"role": "user","content": f"({outfitOverview}) Generate ecommerce search prompts for each of the individual items in the outfit.Give Json object with 'clothingItems' Array contatining 'name' and 'searchPrompt'.Add user info(sex,size,etc) in searchPrompts: {userInfo}"},
 
         #{"role": "user", "content": f"({outfit_text}) Generate short image generation prompts for each of the individual items in the outfit.Give Json object with 'clothingItem' Array contatining 'name' and 'imagePrompt'"},
     ]
