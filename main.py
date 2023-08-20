@@ -27,12 +27,14 @@ async def ok_endpoint():
     return {"message": "ok"}
 
 
+#Generates the overview of the outfit in text form
 @app.get("/outfit_text")
 async def generate_overview_text(input):
     overviewText = utils.generate_overview_text(input)
     #print(combinedOutfit)
     return overviewText
 
+#Finds the clothing items in the overview text and returns the search results from flipkart
 @app.get("/items_flipkart_results")
 async def generate_clothingItems_search_results(overviewText):
     clothingItemsSearchResult = utils.generate_clothingItemsFlipkartSearchResults(overviewText)
